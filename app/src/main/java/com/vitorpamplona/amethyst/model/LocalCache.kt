@@ -875,8 +875,8 @@ object LocalCache {
 
         return users.values.filter {
             (it.anyNameStartsWith(username)) ||
-                it.pubkeyHex.startsWith(username, true) ||
-                it.pubkeyNpub().startsWith(username, true)
+                it.pubkeyHex.contains(username, true) ||
+                it.pubkeyNpub().contains(username, true)
         }
     }
 
@@ -897,13 +897,13 @@ object LocalCache {
             (it.event is TextNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
                 (it.event is PollNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
                 (it.event is ChannelMessageEvent && it.event?.content()?.contains(text, true) ?: false) ||
-                it.idHex.startsWith(text, true) ||
-                it.idNote().startsWith(text, true)
+                it.idHex.contains(text, true) ||
+                it.idNote().contains(text, true)
         } + addressables.values.filter {
             (it.event as? LongTextNoteEvent)?.content?.contains(text, true) ?: false ||
                 (it.event as? LongTextNoteEvent)?.title()?.contains(text, true) ?: false ||
                 (it.event as? LongTextNoteEvent)?.summary()?.contains(text, true) ?: false ||
-                it.idHex.startsWith(text, true)
+                it.idHex.contains(text, true)
         }
     }
 
