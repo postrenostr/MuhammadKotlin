@@ -909,7 +909,6 @@ object LocalCache {
 
     fun findChannelsStartingWith(text: String): List<Channel> {
         checkNotInMainThread()
-
         val key = try {
             Nip19.uriToRoute(text)?.hex ?: Hex.decode(text).toHexKey()
         } catch (e: Exception) {

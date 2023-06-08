@@ -265,7 +265,7 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
                 .defaultMinSize(minHeight = 20.dp),
             placeholder = {
                 Text(
-                    text = stringResource(R.string.npub_hex_username),
+                    text = stringResource(R.string.search),
                     color = MaterialTheme.colors.onSurface.copy(alpha = 0.32f)
                 )
             },
