@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
@@ -40,7 +41,9 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -55,6 +58,7 @@ import com.vitorpamplona.amethyst.model.User
 import com.vitorpamplona.amethyst.service.NostrGlobalDataSource
 import com.vitorpamplona.amethyst.service.NostrSearchEventOrUserDataSource
 import com.vitorpamplona.amethyst.ui.components.BundledUpdate
+import com.vitorpamplona.amethyst.ui.navigation.Keyboard
 import com.vitorpamplona.amethyst.ui.note.AboutDisplay
 import com.vitorpamplona.amethyst.ui.note.ChannelName
 import com.vitorpamplona.amethyst.ui.note.NoteCompose
@@ -80,7 +84,7 @@ import kotlinx.coroutines.channels.Channel as CoroutineChannel
 fun SearchScreen(
     searchFeedViewModel: NostrGlobalFeedViewModel,
     accountViewModel: AccountViewModel,
-    nav: (String) -> Unit
+    nav: (String) -> Unit,
 ) {
     val lifeCycleOwner = LocalLifecycleOwner.current
 
@@ -113,13 +117,22 @@ fun SearchScreen(
             modifier = Modifier.padding(vertical = 0.dp)
         ) {
             SearchBar(accountViewModel, nav)
-            RefresheableFeedView(searchFeedViewModel, null, accountViewModel, nav, ScrollStateKeys.GLOBAL_SCREEN)
+            RefresheableFeedView(
+                searchFeedViewModel,
+                null,
+                accountViewModel,
+                nav,
+                ScrollStateKeys.GLOBAL_SCREEN
+            )
         }
     }
 }
 
 @Composable
-fun WatchAccountForSearchScreen(searchFeedViewModel: NostrGlobalFeedViewModel, accountViewModel: AccountViewModel) {
+fun WatchAccountForSearchScreen(
+    searchFeedViewModel: NostrGlobalFeedViewModel,
+    accountViewModel: AccountViewModel,
+) {
     LaunchedEffect(accountViewModel) {
         NostrGlobalDataSource.resetFilters()
         NostrSearchEventOrUserDataSource.start()
@@ -155,8 +168,11 @@ class SearchBarViewModel : ViewModel() {
         }
 
         hashtagResults.value = findHashtags(searchValue)
-        searchResultsUsers.value = LocalCache.findUsersStartingWith(searchValue).sortedWith(compareBy({ account?.isFollowing(it) }, { it.toBestDisplayName() })).reversed()
-        searchResultsNotes.value = LocalCache.findNotesStartingWith(searchValue).sortedWith(compareBy({ it.createdAt() }, { it.idHex })).reversed()
+        searchResultsUsers.value = LocalCache.findUsersStartingWith(searchValue)
+            .sortedWith(compareBy({ account?.isFollowing(it) }, { it.toBestDisplayName() }))
+            .reversed()
+        searchResultsNotes.value = LocalCache.findNotesStartingWith(searchValue)
+            .sortedWith(compareBy({ it.createdAt() }, { it.idHex })).reversed()
         searchResultsChannels.value = LocalCache.findChannelsStartingWith(searchValue)
     }
 
@@ -188,6 +204,8 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
 
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    var text by remember { mutableStateOf("") }
 
     val onlineSearch = NostrSearchEventOrUserDataSource
 
@@ -241,16 +259,15 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextField(
-            value = searchBarViewModel.searchValue,
+            value = text,
             onValueChange = {
-                searchBarViewModel.updateSearchValue(it)
-                scope.launch(Dispatchers.IO) {
-                    searchTextChanges.trySend(it)
-                }
+                text = it
             },
+
             shape = RoundedCornerShape(25.dp),
             keyboardOptions = KeyboardOptions.Default.copy(
-                capitalization = KeyboardCapitalization.Sentences
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Search
             ),
             leadingIcon = {
                 Icon(
@@ -284,6 +301,15 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
                     }
                 }
             },
+            keyboardActions = KeyboardActions(
+                onDone = {},
+                onSearch = {
+                    searchBarViewModel.updateSearchValue(text)
+                    scope.launch(Dispatchers.IO) {
+                        searchTextChanges.trySend(text)
+                    }
+                }
+            ),
             singleLine = true,
             colors = TextFieldDefaults.textFieldColors(
                 focusedIndicatorColor = Color.Transparent,
@@ -291,6 +317,7 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
             )
         )
     }
+
 
     if (searchBarViewModel.isSearching()) {
         LazyColumn(
@@ -301,17 +328,23 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
             ),
             state = listState
         ) {
-            itemsIndexed(searchBarViewModel.hashtagResults.value, key = { _, item -> "#" + item }) { _, item ->
+            itemsIndexed(
+                searchBarViewModel.hashtagResults.value,
+                key = { _, item -> "#" + item }) { _, item ->
                 HashtagLine(item) {
                     nav("Hashtag/$item")
                 }
             }
 
-            itemsIndexed(searchBarViewModel.searchResultsUsers.value, key = { _, item -> "u" + item.pubkeyHex }) { _, item ->
+            itemsIndexed(
+                searchBarViewModel.searchResultsUsers.value,
+                key = { _, item -> "u" + item.pubkeyHex }) { _, item ->
                 UserCompose(item, accountViewModel = accountViewModel, nav = nav)
             }
 
-            itemsIndexed(searchBarViewModel.searchResultsChannels.value, key = { _, item -> "c" + item.idHex }) { _, item ->
+            itemsIndexed(
+                searchBarViewModel.searchResultsChannels.value,
+                key = { _, item -> "c" + item.idHex }) { _, item ->
                 ChannelName(
                     channelIdHex = item.idHex,
                     channelPicture = item.profilePicture(),
@@ -328,7 +361,9 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
                 )
             }
 
-            itemsIndexed(searchBarViewModel.searchResultsNotes.value, key = { _, item -> "n" + item.idHex }) { _, item ->
+            itemsIndexed(
+                searchBarViewModel.searchResultsNotes.value,
+                key = { _, item -> "n" + item.idHex }) { _, item ->
                 NoteCompose(item, accountViewModel = accountViewModel, nav = nav)
             }
         }
@@ -390,7 +425,7 @@ fun HashtagLine(tag: String, onClick: () -> Unit) {
 fun UserLine(
     baseUser: User,
     accountViewModel: AccountViewModel,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier

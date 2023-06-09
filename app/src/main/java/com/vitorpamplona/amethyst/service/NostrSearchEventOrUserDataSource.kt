@@ -1,5 +1,6 @@
 package com.vitorpamplona.amethyst.service
 
+import android.view.SearchEvent
 import com.vitorpamplona.amethyst.model.toHexKey
 import com.vitorpamplona.amethyst.service.model.*
 import com.vitorpamplona.amethyst.service.nip19.Nip19
@@ -48,14 +49,15 @@ object NostrSearchEventOrUserDataSource : NostrDataSource("SingleEventFeed") {
                 filter = JsonFilter(
                     kinds = listOf(MetadataEvent.kind),
                     search = mySearchString,
-                    limit = 20
+                    limit = 200
                 )
             ),
             TypedFilter(
                 types = setOf(FeedType.SEARCH),
                 filter = JsonFilter(
+                    kinds = listOf(TextNoteEvent.kind),
                     search = mySearchString,
-                    limit = 20
+                    limit = 200
                 )
             )
         )

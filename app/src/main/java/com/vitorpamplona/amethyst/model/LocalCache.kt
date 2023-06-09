@@ -876,7 +876,7 @@ object LocalCache {
         return users.values.filter {
             (it.anyNameStartsWith(username)) ||
                 it.pubkeyHex.contains(username, true) ||
-                it.pubkeyNpub().contains(username, true)
+                it.pubkeyNpub().startsWith(username, true)
         }
     }
 
@@ -893,7 +893,28 @@ object LocalCache {
             return listOfNotNull(notes[key] ?: addressables[key])
         }
 
+      //  return notes.values + addressables.values
+
+        // MyChanges    removing search filters
+
+        val words1 = text.split("\\s+".toRegex()) // Splitting by one or more whitespaces
+        val regexPattern = "\\b(${words1.joinToString("|") { Regex.escape(it) }})\\b"
+        val regex = Regex(regexPattern,RegexOption.IGNORE_CASE)
+
         return notes.values.filter {
+            (it.event is TextNoteEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
+                    (it.event is PollNoteEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
+                    (it.event is ChannelMessageEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
+                    regex.containsMatchIn(it.idHex) ||
+                    regex.containsMatchIn(it.idNote())
+        } + addressables.values.filter {
+            (it.event as? LongTextNoteEvent)?.content?.let { regex.containsMatchIn(it) } == true ||
+                    (it.event as? LongTextNoteEvent)?.title()?.let { regex.containsMatchIn(it) } == true ||
+                    (it.event as? LongTextNoteEvent)?.summary()?.let { regex.containsMatchIn(it) } == true ||
+                    regex.containsMatchIn(it.idHex)
+        }
+
+ /*       return notes.values.filter {
             (it.event is TextNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
                 (it.event is PollNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
                 (it.event is ChannelMessageEvent && it.event?.content()?.contains(text, true) ?: false) ||
@@ -904,7 +925,7 @@ object LocalCache {
                 (it.event as? LongTextNoteEvent)?.title()?.contains(text, true) ?: false ||
                 (it.event as? LongTextNoteEvent)?.summary()?.contains(text, true) ?: false ||
                 it.idHex.contains(text, true)
-        }
+        }*/
     }
 
     fun findChannelsStartingWith(text: String): List<Channel> {
