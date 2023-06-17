@@ -328,7 +328,7 @@ object LocalCache {
         if (note.event?.id() == event.id()) return
 
         val replyTo = event.badgeAwardEvents().mapNotNull { checkGetOrCreateNote(it) } +
-            event.badgeAwardDefinitions().mapNotNull { getOrCreateAddressableNote(it) }
+                event.badgeAwardDefinitions().mapNotNull { getOrCreateAddressableNote(it) }
 
         if (event.createdAt > (note.createdAt() ?: 0)) {
             note.loadEvent(event, author, replyTo)
@@ -463,7 +463,8 @@ object LocalCache {
 
                 if (deleteNote.event is PrivateDmEvent) {
                     val author = deleteNote.author
-                    val recipient = (deleteNote.event as? PrivateDmEvent)?.verifiedRecipientPubKey()?.let { checkGetOrCreateUser(it) }
+                    val recipient = (deleteNote.event as? PrivateDmEvent)?.verifiedRecipientPubKey()
+                        ?.let { checkGetOrCreateUser(it) }
 
                     if (recipient != null && author != null) {
                         author.removeMessage(recipient, deleteNote)
@@ -492,7 +493,7 @@ object LocalCache {
 
         val author = getOrCreateUser(event.pubKey)
         val repliesTo = event.boostedPost().mapNotNull { checkGetOrCreateNote(it) } +
-            event.taggedAddresses().mapNotNull { getOrCreateAddressableNote(it) }
+                event.taggedAddresses().mapNotNull { getOrCreateAddressableNote(it) }
 
         note.loadEvent(event, author, repliesTo)
 
@@ -515,7 +516,7 @@ object LocalCache {
 
         val author = getOrCreateUser(event.pubKey)
         val repliesTo = event.originalPost().mapNotNull { checkGetOrCreateNote(it) } +
-            event.taggedAddresses().mapNotNull { getOrCreateAddressableNote(it) }
+                event.taggedAddresses().mapNotNull { getOrCreateAddressableNote(it) }
 
         note.loadEvent(event, author, repliesTo)
 
@@ -551,7 +552,7 @@ object LocalCache {
 
         val mentions = event.reportedAuthor().mapNotNull { checkGetOrCreateUser(it.key) }
         val repliesTo = event.reportedPost().mapNotNull { checkGetOrCreateNote(it.key) } +
-            event.taggedAddresses().map { getOrCreateAddressableNote(it) }
+                event.taggedAddresses().map { getOrCreateAddressableNote(it) }
 
         note.loadEvent(event, author, repliesTo)
 
@@ -682,10 +683,11 @@ object LocalCache {
         val author = getOrCreateUser(event.pubKey)
         val mentions = event.zappedAuthor().mapNotNull { checkGetOrCreateUser(it) }
         val repliesTo = event.zappedPost().mapNotNull { checkGetOrCreateNote(it) } +
-            event.taggedAddresses().map { getOrCreateAddressableNote(it) } +
-            (
-                (zapRequest?.event as? LnZapRequestEvent)?.taggedAddresses()?.map { getOrCreateAddressableNote(it) } ?: emptySet<Note>()
-                )
+                event.taggedAddresses().map { getOrCreateAddressableNote(it) } +
+                (
+                        (zapRequest?.event as? LnZapRequestEvent)?.taggedAddresses()
+                            ?.map { getOrCreateAddressableNote(it) } ?: emptySet<Note>()
+                        )
 
         note.loadEvent(event, author, repliesTo)
 
@@ -715,7 +717,7 @@ object LocalCache {
         val author = getOrCreateUser(event.pubKey)
         val mentions = event.zappedAuthor().mapNotNull { checkGetOrCreateUser(it) }
         val repliesTo = event.zappedPost().mapNotNull { checkGetOrCreateNote(it) } +
-            event.taggedAddresses().map { getOrCreateAddressableNote(it) }
+                event.taggedAddresses().map { getOrCreateAddressableNote(it) }
 
         note.loadEvent(event, author, repliesTo)
 
@@ -802,7 +804,10 @@ object LocalCache {
                 val stream = FileOutputStream(file)
                 stream.write(event.decode())
                 stream.close()
-                Log.i("FileStorageEvent", "NIP95 File received from ${relay?.url} and saved to disk as $file")
+                Log.i(
+                    "FileStorageEvent",
+                    "NIP95 File received from ${relay?.url} and saved to disk as $file"
+                )
             }
         } catch (e: IOException) {
             Log.e("FileStorageEvent", "FileStorageEvent save to disk error: " + event.id, e)
@@ -812,7 +817,8 @@ object LocalCache {
         if (note.event != null) return
 
         // this is an invalid event. But we don't need to keep the data in memory.
-        val eventNoData = FileStorageEvent(event.id, event.pubKey, event.createdAt, event.tags, "", event.sig)
+        val eventNoData =
+            FileStorageEvent(event.id, event.pubKey, event.createdAt, event.tags, "", event.sig)
 
         note.loadEvent(eventNoData, author, emptyList())
 
@@ -823,7 +829,11 @@ object LocalCache {
         // Does nothing without a response callback.
     }
 
-    fun consume(event: LnZapPaymentRequestEvent, zappedNote: Note?, onResponse: (LnZapPaymentResponseEvent) -> Unit) {
+    fun consume(
+        event: LnZapPaymentRequestEvent,
+        zappedNote: Note?,
+        onResponse: (LnZapPaymentResponseEvent) -> Unit,
+    ) {
         val note = getOrCreateNote(event.id)
         val author = getOrCreateUser(event.pubKey)
 
@@ -875,12 +885,12 @@ object LocalCache {
 
         return users.values.filter {
             (it.anyNameStartsWith(username)) ||
-                it.pubkeyHex.contains(username, true) ||
-                it.pubkeyNpub().startsWith(username, true)
+                    it.pubkeyHex.contains(username, true) ||
+                    it.pubkeyNpub().startsWith(username, true)
         }
     }
 
-    fun findNotesStartingWith(text: String): List<Note> {
+    fun findNotesStartingWith(text: String, isImage: Boolean): List<Note> {
         checkNotInMainThread()
 
         val key = try {
@@ -893,39 +903,56 @@ object LocalCache {
             return listOfNotNull(notes[key] ?: addressables[key])
         }
 
-      //  return notes.values + addressables.values
+        //  return notes.values + addressables.values
 
         // MyChanges    removing search filters
 
+        Log.i("findNotesStartingWith", "findNotesStartingWith: $isImage")
+
         val words1 = text.split("\\s+".toRegex()) // Splitting by one or more whitespaces
         val regexPattern = "\\b(${words1.joinToString("|") { Regex.escape(it) }})\\b"
-        val regex = Regex(regexPattern,RegexOption.IGNORE_CASE)
+        val regex = Regex(regexPattern, RegexOption.IGNORE_CASE)
 
-        return notes.values.filter {
-            (it.event is TextNoteEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
-                    (it.event is PollNoteEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
-                    (it.event is ChannelMessageEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
-                    regex.containsMatchIn(it.idHex) ||
-                    regex.containsMatchIn(it.idNote())
-        } + addressables.values.filter {
-            (it.event as? LongTextNoteEvent)?.content?.let { regex.containsMatchIn(it) } == true ||
-                    (it.event as? LongTextNoteEvent)?.title()?.let { regex.containsMatchIn(it) } == true ||
-                    (it.event as? LongTextNoteEvent)?.summary()?.let { regex.containsMatchIn(it) } == true ||
-                    regex.containsMatchIn(it.idHex)
+        if (isImage) {
+            return notes.values.filter {
+                (it.event is TextNoteEvent && it.event?.isTaggedHash(text) == true)
+            } + addressables.values.filter {
+                ((it.event as? LongTextNoteEvent)?.dTag()
+                    ?.let { regex.matches(it) } == true  && (it.event as? LongTextNoteEvent)?.image() != null)
+            }
+        } else {
+            return notes.values.filter {
+                (it.event is TextNoteEvent && regex.containsMatchIn(it.event?.content() ?: "")) ||
+                        (it.event is PollNoteEvent && regex.containsMatchIn(
+                            it.event?.content() ?: ""
+                        )) ||
+                        (it.event is ChannelMessageEvent && regex.containsMatchIn(
+                            it.event?.content() ?: ""
+                        )) ||
+                        regex.containsMatchIn(it.idHex) ||
+                        regex.containsMatchIn(it.idNote())
+            } + addressables.values.filter {
+                (it.event as? LongTextNoteEvent)?.content?.let { regex.containsMatchIn(it) } == true ||
+                        (it.event as? LongTextNoteEvent)?.title()
+                            ?.let { regex.containsMatchIn(it) } == true ||
+                        (it.event as? LongTextNoteEvent)?.summary()
+                            ?.let { regex.containsMatchIn(it) } == true ||
+                        regex.containsMatchIn(it.idHex)
+            }
         }
 
- /*       return notes.values.filter {
-            (it.event is TextNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
-                (it.event is PollNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
-                (it.event is ChannelMessageEvent && it.event?.content()?.contains(text, true) ?: false) ||
-                it.idHex.contains(text, true) ||
-                it.idNote().contains(text, true)
-        } + addressables.values.filter {
-            (it.event as? LongTextNoteEvent)?.content?.contains(text, true) ?: false ||
-                (it.event as? LongTextNoteEvent)?.title()?.contains(text, true) ?: false ||
-                (it.event as? LongTextNoteEvent)?.summary()?.contains(text, true) ?: false ||
-                it.idHex.contains(text, true)
-        }*/
+        /*       return notes.values.filter {
+                   (it.event is TextNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
+                       (it.event is PollNoteEvent && it.event?.content()?.contains(text, true) ?: false) ||
+                       (it.event is ChannelMessageEvent && it.event?.content()?.contains(text, true) ?: false) ||
+                       it.idHex.contains(text, true) ||
+                       it.idNote().contains(text, true)
+               } + addressables.values.filter {
+                   (it.event as? LongTextNoteEvent)?.content?.contains(text, true) ?: false ||
+                       (it.event as? LongTextNoteEvent)?.title()?.contains(text, true) ?: false ||
+                       (it.event as? LongTextNoteEvent)?.summary()?.contains(text, true) ?: false ||
+                       it.idHex.contains(text, true)
+               }*/
     }
 
     fun findChannelsStartingWith(text: String): List<Channel> {
@@ -942,8 +969,8 @@ object LocalCache {
 
         return channels.values.filter {
             it.anyNameStartsWith(text) ||
-                it.idHex.startsWith(text, true) ||
-                it.idNote().startsWith(text, true)
+                    it.idHex.startsWith(text, true) ||
+                    it.idNote().startsWith(text, true)
         }
     }
 
@@ -1059,6 +1086,7 @@ object LocalCache {
                     }
                     consume(event)
                 }
+
                 is LnZapRequestEvent -> consume(event)
                 is LnZapPaymentRequestEvent -> consume(event)
                 is LnZapPaymentResponseEvent -> consume(event)
@@ -1076,6 +1104,7 @@ object LocalCache {
                     }
                     consume(event)
                 }
+
                 is TextNoteEvent -> consume(event, relay)
                 is PollNoteEvent -> consume(event, relay)
                 else -> {

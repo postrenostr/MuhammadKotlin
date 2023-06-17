@@ -12,8 +12,11 @@ import com.vitorpamplona.amethyst.ui.screen.loggedIn.MainScreen
 import com.vitorpamplona.amethyst.ui.screen.loggedOff.LoginPage
 
 @Composable
-fun AccountScreen(accountStateViewModel: AccountStateViewModel, startingPage: String?) {
+fun AccountScreen(accountStateViewModel: AccountStateViewModel ,clicked: (String) -> Unit) {
     val accountState by accountStateViewModel.accountContent.collectAsState()
+
+    val list =
+        listOf("Cat", "Dog", "Horse", "Cow", "Lion", "Fox")
 
     Column() {
         Crossfade(targetState = accountState, animationSpec = tween(durationMillis = 100)) { state ->
@@ -22,20 +25,10 @@ fun AccountScreen(accountStateViewModel: AccountStateViewModel, startingPage: St
                     LoginPage(accountStateViewModel, isFirstLogin = true)
                 }
                 is AccountState.LoggedIn -> {
-                    val accountViewModel: AccountViewModel = viewModel(
-                        key = state.account.userProfile().pubkeyHex,
-                        factory = AccountViewModel.Factory(state.account)
-                    )
-
-                    MainScreen(accountViewModel, accountStateViewModel, startingPage)
+                    HomeScreenUI(list,clicked)
                 }
                 is AccountState.LoggedInViewOnly -> {
-                    val accountViewModel: AccountViewModel = viewModel(
-                        key = state.account.userProfile().pubkeyHex,
-                        factory = AccountViewModel.Factory(state.account)
-                    )
-
-                    MainScreen(accountViewModel, accountStateViewModel, startingPage)
+                    HomeScreenUI(list,clicked)
                 }
             }
         }

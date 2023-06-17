@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.vitorpamplona.amethyst.model.ImageSearch
 import com.vitorpamplona.amethyst.ui.note.UserReactionsViewModel
 import com.vitorpamplona.amethyst.ui.screen.NostrChatroomListKnownFeedViewModel
 import com.vitorpamplona.amethyst.ui.screen.NostrChatroomListNewFeedViewModel
@@ -47,7 +48,8 @@ fun AppNavigation(
 
     navController: NavHostController,
     accountViewModel: AccountViewModel,
-    nextPage: String? = null
+    nextPage: String? = null,
+    imageSearch: ImageSearch,
 ) {
     var actionableNextPage by remember { mutableStateOf<String?>(nextPage) }
 
@@ -89,7 +91,8 @@ fun AppNavigation(
                 SearchScreen(
                     searchFeedViewModel = searchFeedViewModel,
                     accountViewModel = accountViewModel,
-                    nav = nav
+                    nav = nav,
+                    imageSearch
                 )
             })
         }

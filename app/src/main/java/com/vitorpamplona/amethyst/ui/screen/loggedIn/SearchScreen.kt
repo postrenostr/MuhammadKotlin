@@ -1,5 +1,6 @@
 package com.vitorpamplona.amethyst.ui.screen.loggedIn
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vitorpamplona.amethyst.R
 import com.vitorpamplona.amethyst.model.Account
 import com.vitorpamplona.amethyst.model.Channel
+import com.vitorpamplona.amethyst.model.ImageSearch
 import com.vitorpamplona.amethyst.model.LocalCache
 import com.vitorpamplona.amethyst.model.Note
 import com.vitorpamplona.amethyst.model.User
@@ -70,6 +72,7 @@ import com.vitorpamplona.amethyst.ui.screen.RefresheableFeedView
 import com.vitorpamplona.amethyst.ui.screen.ScrollStateKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,6 +80,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.logging.Handler
 import java.util.regex.Pattern
 import kotlinx.coroutines.channels.Channel as CoroutineChannel
 
@@ -85,6 +89,7 @@ fun SearchScreen(
     searchFeedViewModel: NostrGlobalFeedViewModel,
     accountViewModel: AccountViewModel,
     nav: (String) -> Unit,
+    imageSearch: ImageSearch,
 ) {
     val lifeCycleOwner = LocalLifecycleOwner.current
 
@@ -97,6 +102,7 @@ fun SearchScreen(
                 NostrGlobalDataSource.start()
                 NostrSearchEventOrUserDataSource.start()
                 searchFeedViewModel.invalidateData()
+
             }
             if (event == Lifecycle.Event.ON_PAUSE) {
                 println("Global Stop")
@@ -116,7 +122,7 @@ fun SearchScreen(
         Column(
             modifier = Modifier.padding(vertical = 0.dp)
         ) {
-            SearchBar(accountViewModel, nav)
+            SearchBar(accountViewModel, nav, imageSearch)
             RefresheableFeedView(
                 searchFeedViewModel,
                 null,
@@ -149,6 +155,8 @@ class SearchBarViewModel : ViewModel() {
     val searchResultsChannels = mutableStateOf<List<Channel>>(emptyList())
     val hashtagResults = mutableStateOf<List<String>>(emptyList())
 
+    var isImageSearch = mutableStateOf<Boolean>(false)
+
     val isTrailingIconVisible by
     derivedStateOf {
         searchValue.isNotBlank()
@@ -157,6 +165,11 @@ class SearchBarViewModel : ViewModel() {
     fun updateSearchValue(newValue: String) {
         searchValue = newValue
     }
+
+    fun setIsImageSearch(isImage : Boolean){
+        isImageSearch.value = isImage
+    }
+
 
     private fun runSearch() {
         if (searchValue.isBlank()) {
@@ -167,13 +180,13 @@ class SearchBarViewModel : ViewModel() {
             return
         }
 
-        hashtagResults.value = findHashtags(searchValue)
-        searchResultsUsers.value = LocalCache.findUsersStartingWith(searchValue)
+       // hashtagResults.value = findHashtags(searchValue)
+        /*searchResultsUsers.value = LocalCache.findUsersStartingWith(searchValue)
             .sortedWith(compareBy({ account?.isFollowing(it) }, { it.toBestDisplayName() }))
-            .reversed()
-        searchResultsNotes.value = LocalCache.findNotesStartingWith(searchValue)
+            .reversed()*/
+        searchResultsNotes.value = LocalCache.findNotesStartingWith(searchValue,isImageSearch.value)
             .sortedWith(compareBy({ it.createdAt() }, { it.idHex })).reversed()
-        searchResultsChannels.value = LocalCache.findChannelsStartingWith(searchValue)
+      //  searchResultsChannels.value = LocalCache.findChannelsStartingWith(searchValue)
     }
 
     fun clean() {
@@ -198,7 +211,11 @@ class SearchBarViewModel : ViewModel() {
 
 @OptIn(FlowPreview::class)
 @Composable
-private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit) {
+private fun SearchBar(
+    accountViewModel: AccountViewModel,
+    nav: (String) -> Unit,
+    imageSearch: ImageSearch,
+) {
     val searchBarViewModel: SearchBarViewModel = viewModel()
     searchBarViewModel.account = accountViewModel.account
 
@@ -212,6 +229,20 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
     // Create a channel for processing search queries.
     val searchTextChanges = remember {
         CoroutineChannel<String>(CoroutineChannel.CONFLATED)
+    }
+
+    if (imageSearch.isImagesearch) {
+        imageSearch.isImagesearch = false
+        android.os.Handler().postDelayed(Runnable {
+            imageSearch.searchKeyword?.let {
+                text = it
+                searchBarViewModel.updateSearchValue(it)
+                searchBarViewModel.setIsImageSearch(true)
+                scope.launch(Dispatchers.IO) {
+                    searchTextChanges.trySend(text)
+                }
+            }
+        }, 1000)
     }
 
     LaunchedEffect(Unit) {
@@ -237,11 +268,11 @@ private fun SearchBar(accountViewModel: AccountViewModel, nav: (String) -> Unit)
                     }
 
                     searchBarViewModel.invalidateData()
-
                     // makes sure to show the top of the search
                     scope.launch(Dispatchers.Main) { listState.animateScrollToItem(0) }
                 }
         }
+
     }
 
     DisposableEffect(Unit) {

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.vitorpamplona.amethyst.model.ImageSearch
 import com.vitorpamplona.amethyst.ui.buttons.ChannelFabColumn
 import com.vitorpamplona.amethyst.ui.buttons.NewNoteButton
 import com.vitorpamplona.amethyst.ui.navigation.*
@@ -50,7 +51,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MainScreen(accountViewModel: AccountViewModel, accountStateViewModel: AccountStateViewModel, startingPage: String? = null) {
+fun MainScreen(accountViewModel: AccountViewModel, accountStateViewModel: AccountStateViewModel, startingPage: String? = null , imageSearch: ImageSearch) {
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState(rememberDrawerState(DrawerValue.Closed))
@@ -153,7 +154,8 @@ fun MainScreen(accountViewModel: AccountViewModel, accountStateViewModel: Accoun
                     userReactionsStatsModel,
                     navController,
                     accountViewModel,
-                    startingPage
+                    startingPage,
+                    imageSearch
                 )
             }
         }

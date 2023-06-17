@@ -1,18 +1,24 @@
 package com.vitorpamplona.amethyst.ui
 
+import android.accounts.Account
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vitorpamplona.amethyst.LocalPreferences
 import com.vitorpamplona.amethyst.ServiceManager
+import com.vitorpamplona.amethyst.model.ImageSearch
 import com.vitorpamplona.amethyst.service.model.ChannelCreateEvent
 import com.vitorpamplona.amethyst.service.model.ChannelMessageEvent
 import com.vitorpamplona.amethyst.service.model.ChannelMetadataEvent
@@ -24,7 +30,13 @@ import com.vitorpamplona.amethyst.ui.components.DefaultMutedSetting
 import com.vitorpamplona.amethyst.ui.navigation.Route
 import com.vitorpamplona.amethyst.ui.note.Nip47
 import com.vitorpamplona.amethyst.ui.screen.AccountScreen
+import com.vitorpamplona.amethyst.ui.screen.AccountState
 import com.vitorpamplona.amethyst.ui.screen.AccountStateViewModel
+import com.vitorpamplona.amethyst.ui.screen.HomeScreenUI
+import com.vitorpamplona.amethyst.ui.screen.loggedIn.AccountViewModel
+import com.vitorpamplona.amethyst.ui.screen.loggedIn.HomeScreen
+import com.vitorpamplona.amethyst.ui.screen.loggedIn.MainScreen
+import com.vitorpamplona.amethyst.ui.screen.loggedOff.LoginPage
 import com.vitorpamplona.amethyst.ui.theme.AmethystTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -34,29 +46,80 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : FragmentActivity() {
+
+    private val imageSearch by lazy {
+        intent.getSerializableExtra("imageSearch") as ImageSearch? ?: ImageSearch(false, null)
+    }
+
+    @SuppressLint("StateFlowValueCalledInComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val uri = intent?.data?.toString()
-
-        val startingPage = uriToRoute(uri)
-
         LocalPreferences.migrateSingleUserPrefs()
+        val uri = intent?.data?.toString()
+        var startingPage = uriToRoute(uri)
+
+        if (intent.getBooleanExtra("searchImage", false)) {
+            startingPage = Route.Search.route
+        } else if (intent.getStringExtra("localRoute") != null) {
+            startingPage = intent.getStringExtra("localRoute")
+        }
 
         setContent {
             AmethystTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colors.background
+                ) {
+
                     val accountStateViewModel: AccountStateViewModel = viewModel {
                         AccountStateViewModel(this@MainActivity)
                     }
 
-                    AccountScreen(accountStateViewModel, startingPage)
+                    val accountState = accountStateViewModel.accountContent.value
+
+                    when (accountState) {
+                        is AccountState.LoggedOff -> {
+                            LoginPage(accountStateViewModel, isFirstLogin = true)
+                        }
+
+                        is AccountState.LoggedIn -> {
+                            val accountViewModel: AccountViewModel = viewModel(
+                                key = accountState.account.userProfile().pubkeyHex,
+                                factory = AccountViewModel.Factory(accountState.account)
+                            )
+
+                            MainScreen(
+                                accountViewModel,
+                                accountStateViewModel,
+                                startingPage,
+                                imageSearch
+                            )
+
+                        }
+
+                        is AccountState.LoggedInViewOnly -> {
+                            val accountViewModel: AccountViewModel = viewModel(
+                                key = accountState.account.userProfile().pubkeyHex,
+                                factory = AccountViewModel.Factory(accountState.account)
+                            )
+
+                            MainScreen(
+                                accountViewModel,
+                                accountStateViewModel,
+                                startingPage,
+                                imageSearch
+                            )
+                        }
+                    }
+
                 }
             }
         }
 
         Client.lenient = true
+
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -75,7 +138,6 @@ class MainActivity : FragmentActivity() {
 
     override fun onPause() {
         ServiceManager.pause()
-
         super.onPause()
     }
 
@@ -90,6 +152,7 @@ class MainActivity : FragmentActivity() {
             ServiceManager.cleanUp()
         }
     }
+
 }
 
 class GetMediaActivityResultContract : ActivityResultContracts.GetContent() {
@@ -137,3 +200,5 @@ fun uriToRoute(uri: String?): String? {
         }
     }
 }
+
+

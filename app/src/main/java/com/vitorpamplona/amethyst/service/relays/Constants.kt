@@ -52,7 +52,9 @@ object Constants {
 
         // Supporting NIP-50
         RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
+       // RelaySetupInfo("wss://nostr.zaphappy.world", read = true, write = false, feedTypes = activeTypesSearch)
     )
 
+   // val forcedRelayForSearch = RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
     val forcedRelayForSearch = RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
 }

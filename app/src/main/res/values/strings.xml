@@ -4,6 +4,8 @@
     <string name="point_to_the_qr_code">Point to the QR Code</string>
     <string name="show_qr">Show QR</string>
     <string name="search" translatable="false">Search</string>
+    <string name="image_search">Image Search</string>
+    <string name="app_features">App Features</string>
     <string name="profile_image">Profile Image</string>
     <string name="scan_qr">Scan QR</string>
     <string name="show_anyway">Show Anyway</string>
