@@ -1,7 +1,9 @@
 package com.vitorpamplona.amethyst.service.relays
 
 import android.util.Log
+import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.google.gson.JsonElement
+import com.vitorpamplona.amethyst.Amethyst
 import com.vitorpamplona.amethyst.BuildConfig
 import com.vitorpamplona.amethyst.service.checkNotInMainThread
 import com.vitorpamplona.amethyst.service.model.Event
@@ -36,6 +38,7 @@ class Relay(
         .proxy(proxy)
         .readTimeout(duration)
         .connectTimeout(duration)
+        .addInterceptor(ChuckerInterceptor(Amethyst.instance))
         .writeTimeout(duration)
         .followRedirects(true)
         .followSslRedirects(true)

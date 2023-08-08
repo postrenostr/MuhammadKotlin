@@ -6,7 +6,8 @@ import com.vitorpamplona.amethyst.service.HttpClient
 object Constants {
     val activeTypes = setOf(FeedType.FOLLOWS, FeedType.PRIVATE_DMS)
     val activeTypesChats = setOf(FeedType.FOLLOWS, FeedType.PUBLIC_CHATS, FeedType.PRIVATE_DMS)
-    val activeTypesGlobalChats = setOf(FeedType.FOLLOWS, FeedType.PUBLIC_CHATS, FeedType.PRIVATE_DMS, FeedType.GLOBAL)
+    val activeTypesGlobalChats =
+        setOf(FeedType.FOLLOWS, FeedType.PUBLIC_CHATS, FeedType.PRIVATE_DMS, FeedType.GLOBAL)
     val activeTypesSearch = setOf(FeedType.SEARCH)
 
     fun convertDefaultRelays(): Array<Relay> {
@@ -18,14 +19,39 @@ object Constants {
     val defaultRelays = arrayOf(
         // Free relays for DMs and Follows
         RelaySetupInfo("wss://no.str.cr", read = true, write = true, feedTypes = activeTypes),
-        RelaySetupInfo("wss://relay.snort.social", read = true, write = true, feedTypes = activeTypes),
+        RelaySetupInfo(
+            "wss://relay.snort.social",
+            read = true,
+            write = true,
+            feedTypes = activeTypes
+        ),
         RelaySetupInfo("wss://relay.damus.io", read = true, write = true, feedTypes = activeTypes),
 
         // Chats
-        RelaySetupInfo("wss://nostr.bitcoiner.social", read = true, write = true, feedTypes = activeTypesChats),
-        RelaySetupInfo("wss://relay.nostr.bg", read = true, write = true, feedTypes = activeTypesChats),
-        RelaySetupInfo("wss://nostr.oxtr.dev", read = true, write = true, feedTypes = activeTypesChats),
-        RelaySetupInfo("wss://nostr-pub.wellorder.net", read = true, write = true, feedTypes = activeTypesChats),
+        RelaySetupInfo(
+            "wss://nostr.bitcoiner.social",
+            read = true,
+            write = true,
+            feedTypes = activeTypesChats
+        ),
+        RelaySetupInfo(
+            "wss://relay.nostr.bg",
+            read = true,
+            write = true,
+            feedTypes = activeTypesChats
+        ),
+        RelaySetupInfo(
+            "wss://nostr.oxtr.dev",
+            read = true,
+            write = true,
+            feedTypes = activeTypesChats
+        ),
+        RelaySetupInfo(
+            "wss://nostr-pub.wellorder.net",
+            read = true,
+            write = true,
+            feedTypes = activeTypesChats
+        ),
         RelaySetupInfo("wss://nostr.mom", read = true, write = true, feedTypes = activeTypesChats),
         RelaySetupInfo("wss://nos.lol", read = true, write = true, feedTypes = activeTypesChats),
 
@@ -40,21 +66,76 @@ object Constants {
         // NewRelayListViewModel.Relay("wss://brb.io", read = true, write = true, feedTypes = activeTypes),
 
         // Paid relays
-        RelaySetupInfo("wss://relay.nostr.com.au", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://eden.nostr.land", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://nostr.milou.lol", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://puravida.nostr.land", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://nostr.wine", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://nostr.inosta.cc", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://atlas.nostr.land", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://relay.orangepill.dev", read = true, write = false, feedTypes = activeTypesGlobalChats),
-        RelaySetupInfo("wss://relay.nostrati.com", read = true, write = false, feedTypes = activeTypesGlobalChats),
+        RelaySetupInfo(
+            "wss://relay.nostr.com.au",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://eden.nostr.land",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://nostr.milou.lol",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://puravida.nostr.land",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://nostr.wine",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://nostr.inosta.cc",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://atlas.nostr.land",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://relay.orangepill.dev",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
+        RelaySetupInfo(
+            "wss://relay.nostrati.com",
+            read = true,
+            write = false,
+            feedTypes = activeTypesGlobalChats
+        ),
 
         // Supporting NIP-50
-        RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
-       // RelaySetupInfo("wss://nostr.zaphappy.world", read = true, write = false, feedTypes = activeTypesSearch)
+        RelaySetupInfo(
+            "wss://relay.nostr.band",
+            read = true,
+            write = false,
+            feedTypes = activeTypesSearch
+        )
+
     )
 
-   // val forcedRelayForSearch = RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
-    val forcedRelayForSearch = RelaySetupInfo("wss://relay.nostr.band", read = true, write = false, feedTypes = activeTypesSearch)
+    val forcedRelayForSearch = RelaySetupInfo(
+        "wss://relay.nostr.band",
+        read = true,
+        write = false,
+        feedTypes = activeTypesSearch
+    )
+
 }

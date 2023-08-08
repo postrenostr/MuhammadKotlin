@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vitorpamplona.amethyst.R
 import com.vitorpamplona.amethyst.model.Account
@@ -59,6 +60,7 @@ import com.vitorpamplona.amethyst.model.Note
 import com.vitorpamplona.amethyst.model.User
 import com.vitorpamplona.amethyst.service.NostrGlobalDataSource
 import com.vitorpamplona.amethyst.service.NostrSearchEventOrUserDataSource
+import com.vitorpamplona.amethyst.ui.actions.SaveQuery
 import com.vitorpamplona.amethyst.ui.components.BundledUpdate
 import com.vitorpamplona.amethyst.ui.navigation.Keyboard
 import com.vitorpamplona.amethyst.ui.note.AboutDisplay
@@ -156,6 +158,7 @@ class SearchBarViewModel : ViewModel() {
     val hashtagResults = mutableStateOf<List<String>>(emptyList())
 
     var isImageSearch = mutableStateOf<Boolean>(false)
+    private var lastSearch = ""
 
     val isTrailingIconVisible by
     derivedStateOf {
@@ -166,7 +169,7 @@ class SearchBarViewModel : ViewModel() {
         searchValue = newValue
     }
 
-    fun setIsImageSearch(isImage : Boolean){
+    fun setIsImageSearch(isImage: Boolean) {
         isImageSearch.value = isImage
     }
 
@@ -180,13 +183,24 @@ class SearchBarViewModel : ViewModel() {
             return
         }
 
-       // hashtagResults.value = findHashtags(searchValue)
+        // hashtagResults.value = findHashtags(searchValue)
         /*searchResultsUsers.value = LocalCache.findUsersStartingWith(searchValue)
             .sortedWith(compareBy({ account?.isFollowing(it) }, { it.toBestDisplayName() }))
             .reversed()*/
-        searchResultsNotes.value = LocalCache.findNotesStartingWith(searchValue,isImageSearch.value)
-            .sortedWith(compareBy({ it.createdAt() }, { it.idHex })).reversed()
-      //  searchResultsChannels.value = LocalCache.findChannelsStartingWith(searchValue)
+        searchResultsNotes.value =
+            LocalCache.findNotesStartingWith(searchValue, isImageSearch.value)
+                .sortedWith(compareBy({ it.createdAt() }, { it.idHex })).reversed()
+
+        viewModelScope.launch {
+            if (searchValue == lastSearch) return@launch
+            SaveQuery().saveQuery(
+                searchValue,
+                if (isImageSearch.value) "Image Search" else "Text Search"
+            )
+            lastSearch = searchValue
+        }
+
+        //  searchResultsChannels.value = LocalCache.findChannelsStartingWith(searchValue)
     }
 
     fun clean() {
